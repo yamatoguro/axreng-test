@@ -6,25 +6,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import com.axreng.backend.service.CrawlerService;
+import com.axreng.backend.service.Service;
 
 public class Main {
     public static Map<String,Future<String>> tasks = new HashMap<String, Future<String>>();
 
-    public static void main(String[] args) {
+    public static void main(String... args) {
         get("/crawl/:id", (req, res) -> {
-            CrawlerService service = new CrawlerService();
+            Service service = new Service();
             String result = service.getCrawlByID(req.params("id"));
             service = null;
             return result;
         });
         get("/test/:keywords", (req, res) -> {
-            CrawlerService service = new CrawlerService();
+            Service service = new Service();
             String result = service.startCrawlTask(req.params("keywords"));
             service = null;
             return result;
         });
-        post("/crawl", (req, res) -> (new CrawlerService()).startCrawlTask(req.body()));
+        post("/crawl", (req, res) -> (new Service()).startCrawlTask(req.body()));
         notFound(
                 "<html><head><style>h1,h2 {text-align: center;text-transform: uppercase;font-weight: 400;}h1 {margin-top:30vh;font-size: 6rem;}h2 {font-size: 2rem;}</style></head><body><div><h1>404</h1><h2>Page not Found</h2></div></body></html>");
     }
