@@ -12,15 +12,13 @@ import java.util.concurrent.Future;
 import com.axreng.backend.Main;
 import com.axreng.backend.util.Utils;
 
-public class CrawlerService {
+public class Service {
 
     public String getCrawlByID(String id) {
         return "GET -> /crawl/" + " / ID => " + Utils.generateID();
     }
 
-    public String executeCrawl(String param, String id) {
-        String url = System.getenv("BASE_URL");
-        System.out.println(url);
+    private String executeCrawl(String param, String id) {
         ArrayList<String> keywords = new ArrayList<String>(Arrays.asList(param.split(",")));
         for (Iterator<String> iterator = keywords.iterator(); iterator.hasNext();) {
             String key = iterator.next();
