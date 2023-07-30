@@ -4,12 +4,12 @@ import static spark.Spark.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Future;
 
+import com.axreng.backend.model.CrawlData;
 import com.axreng.backend.service.Service;
 
 public class Main {
-    public static Map<String,Future<String>> tasks = new HashMap<String, Future<String>>();
+    public static Map<String, CrawlData> tasks = new HashMap<String, CrawlData>();
 
     public static void main(String... args) {
         get("/crawl/:id", (req, res) -> {
