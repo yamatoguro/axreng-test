@@ -110,7 +110,6 @@ public class Crawler {
                 continue;
             }
             linkList.add(link);
-            System.out.print(".");
         }
         return (linkList);
     }
@@ -123,13 +122,11 @@ public class Crawler {
             searchContents = pageContents.toLowerCase();
         }
         for (int i = 0; i < terms.length; i++) {
-            if (searchContents.indexOf(terms[i]) == -1) {
-                continue;
-            } else {
-                System.out.println("Found -> " + terms[i]);
+            if (searchContents.indexOf(terms[i]) > 0) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     public void crawl(

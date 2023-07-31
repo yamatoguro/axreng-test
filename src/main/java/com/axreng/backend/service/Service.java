@@ -14,7 +14,12 @@ import java.util.concurrent.TimeoutException;
 
 import com.axreng.backend.Main;
 import com.axreng.backend.model.CrawlData;
+import com.axreng.backend.model.ResponseERROR;
+import com.axreng.backend.model.ResponseGET;
 import com.axreng.backend.util.Utils;
+import com.google.gson.Gson;
+
+import spark.Response;
 
 public class Service {
 
@@ -33,14 +38,23 @@ public class Service {
         }
     }
 
-    public String getCrawlByID(String id) {
+    public String[] getCrawlByID(String id) {
         try {
             Main.tasks.get(id).getCrawlProccess().get(10, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             System.out.println("Proccess " + id + " not finished yet");
         }
-        String result = "GET -> /crawl/" + " / ID => " + id + " | " + ((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active") + "\n" + ((Main.tasks.get(id).getUrls().size() > 0) ? String.join("\n", Main.tasks.get(id).getUrls()) : "");
-        return result;
+        // String result = "GET -> /crawl/" + " / ID => " + id + " | "
+        // + ((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active") +
+        // "<br>"
+        // + ((Main.tasks.get(id).getUrls().size() > 0) ? String.join("<br>",
+        // Main.tasks.get(id).getUrls()) : "");
+        if (Main.tasks.get(id).getUrls().size() > 0) {
+            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(), Main.tasks.get(id).getUrls().size(), String[].class);
+            return result;
+        }
+        return null;
+
     }
 
     private String executeCrawl(String param, CrawlData data) {
@@ -81,6 +95,25 @@ public class Service {
         Future<String> future = executor.submit(callable);
         data.setCrawlProccess(future);
         Main.tasks.put(id, data);
-        return String.join("\n", "ID: " + id + " | " + data.getStartInstant());
+        return id;
+    }
+
+    public Object getResponseGet(Response res, Service service, String id, Gson gson) {
+        String[] result = service.getCrawlByID(id);
+        service = null;
+        ResponseGET response = new ResponseGET();
+        response.setId(id);
+        response.setStatus((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active");
+        response.setUrls(result);
+        res.body(gson.toJson(response));
+        return gson.toJson(response);
+    }
+
+    public Object getResponseError(Response res, String id, Gson gson) {
+        ResponseERROR response = new ResponseERROR();
+        response.setStatus(404);
+        response.setMessage("crawl not found: " + id);
+        res.body(gson.toJson(response));
+        return gson.toJson(response);
     }
 }
