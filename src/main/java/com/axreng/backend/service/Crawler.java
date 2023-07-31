@@ -66,8 +66,6 @@ public class Crawler {
         ArrayList<String> linkList = new ArrayList<String>();
         while (m.find()) {
             String link = m.group(2).trim();
-            // System.out.println(link);
-
             if (link.toLowerCase().startsWith("../"))
                 link = BASE_URL + link.substring(3);
             if (!link.toLowerCase().startsWith("http://") && !link.toLowerCase().startsWith("https://"))

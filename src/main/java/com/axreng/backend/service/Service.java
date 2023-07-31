@@ -10,15 +10,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.axreng.backend.Main;
 import com.axreng.backend.model.CrawlData;
 import com.axreng.backend.model.ResponseERROR;
 import com.axreng.backend.model.ResponseGET;
+import com.axreng.backend.model.ResponsePOST;
 import com.axreng.backend.util.Utils;
 import com.google.gson.Gson;
 
+import spark.Request;
 import spark.Response;
 
 public class Service {
@@ -30,10 +31,8 @@ public class Service {
                 throw new NullPointerException();
             return url;
         } catch (NullPointerException e) {
-            System.out.println("ERROR: Environment variable not found");
             return "ERROR: Environment variable not found";
         } catch (SecurityException e) {
-            System.out.println("ERROR: Can't access environment variable");
             return "ERROR: Can't access environment variable";
         }
     }
@@ -41,20 +40,13 @@ public class Service {
     public String[] getCrawlByID(String id) {
         try {
             Main.tasks.get(id).getCrawlProccess().get(10, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            System.out.println("Proccess " + id + " not finished yet");
-        }
-        // String result = "GET -> /crawl/" + " / ID => " + id + " | "
-        // + ((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active") +
-        // "<br>"
-        // + ((Main.tasks.get(id).getUrls().size() > 0) ? String.join("<br>",
-        // Main.tasks.get(id).getUrls()) : "");
-        if (Main.tasks.get(id).getUrls().size() > 0) {
-            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(), Main.tasks.get(id).getUrls().size(), String[].class);
+            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(),
+                    Main.tasks.get(id).getUrls().size(),
+                    String[].class);
             return result;
+        } catch (Exception e) {
+            return null;
         }
-        return null;
-
     }
 
     private String executeCrawl(String param, CrawlData data) {
@@ -62,7 +54,6 @@ public class Service {
         for (Iterator<String> iterator = keywords.iterator(); iterator.hasNext();) {
             String key = iterator.next();
             if (key.length() < 4 || key.length() > 32) {
-                System.out.println("Unallowed keyword -> " + key);
                 iterator.remove();
             }
         }
@@ -98,9 +89,8 @@ public class Service {
         return id;
     }
 
-    public Object getResponseGet(Response res, Service service, String id, Gson gson) {
-        String[] result = service.getCrawlByID(id);
-        service = null;
+    public Object getResponseGet(Response res, String id, Gson gson) {
+        String[] result = getCrawlByID(id);
         ResponseGET response = new ResponseGET();
         response.setId(id);
         response.setStatus((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active");
@@ -115,5 +105,32 @@ public class Service {
         response.setMessage("crawl not found: " + id);
         res.body(gson.toJson(response));
         return gson.toJson(response);
+    }
+
+    public Object getCrawl(Request req, Response res) {
+        String id = req.params("id");
+        Gson gson = new Gson();
+        if (!Main.tasks.containsKey(id)) {
+            return getResponseError(res, id, gson);
+        }
+        return getResponseGet(res, id, gson);
+    }
+
+    public Object postCrawl(Request req, Response res) {
+        String result;
+        Gson gson = new Gson();
+        try {
+            result = startCrawlTask(req.params("keywords"));
+            ResponsePOST response = new ResponsePOST();
+            response.setId(result);
+            res.body(gson.toJson(response));
+            return res.body();
+        } catch (InterruptedException | ExecutionException e) {
+            ResponseERROR response = new ResponseERROR();
+            response.setStatus(500);
+            response.setMessage("an error ocurred while processing request | " + e.getMessage());
+            res.body(gson.toJson(response));
+            return res.body();
+        }
     }
 }
