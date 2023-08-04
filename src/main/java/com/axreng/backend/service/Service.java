@@ -26,7 +26,7 @@ public class Service {
 
     public String getBaseURL() {
         try {
-            String url = System.getenv("BASE_URL");
+            String url = getEnv();
             if (url == null)
                 throw new NullPointerException();
             return url;
@@ -37,12 +37,14 @@ public class Service {
         }
     }
 
+    String getEnv() throws NullPointerException, SecurityException {
+        return System.getenv("BASE_URL");
+    }
+
     public String[] getCrawlByID(String id) {
         try {
-            Main.tasks.get(id).getCrawlProccess().get(10, TimeUnit.MILLISECONDS);
-            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(),
-                    Main.tasks.get(id).getUrls().size(),
-                    String[].class);
+            // Main.tasks.get(id).getCrawlProccess().get(10, TimeUnit.MILLISECONDS);
+            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(), Main.tasks.get(id).getUrls().size(),String[].class);
             return result;
         } catch (Exception e) {
             return null;
@@ -63,7 +65,7 @@ public class Service {
         String url = getBaseURL();
         if (!url.toLowerCase().startsWith("http://") && !url.toLowerCase().startsWith("https://"))
             return url;
-        crawler.aquireBaseUrl(url);
+        crawler.setBaseUrl(url);
         crawler.setCrawling(true);
         crawler.crawl(url, 0, false, true, data);
         crawler.setCrawling(false);
@@ -89,7 +91,16 @@ public class Service {
         return id;
     }
 
-    public Object getResponseGet(Response res, String id, Gson gson) {
+    public Object getCrawl(Request req, Response res) {
+        String id = req.params("id");
+        Gson gson = new Gson();
+        if (!Main.tasks.containsKey(id)) {
+            ResponseERROR response = new ResponseERROR();
+            response.setStatus(404);
+            response.setMessage("crawl not found: " + id);
+            res.body(gson.toJson(response));
+            return gson.toJson(response);
+        }
         String[] result = getCrawlByID(id);
         ResponseGET response = new ResponseGET();
         response.setId(id);
@@ -97,23 +108,6 @@ public class Service {
         response.setUrls(result);
         res.body(gson.toJson(response));
         return gson.toJson(response);
-    }
-
-    public Object getResponseError(Response res, String id, Gson gson) {
-        ResponseERROR response = new ResponseERROR();
-        response.setStatus(404);
-        response.setMessage("crawl not found: " + id);
-        res.body(gson.toJson(response));
-        return gson.toJson(response);
-    }
-
-    public Object getCrawl(Request req, Response res) {
-        String id = req.params("id");
-        Gson gson = new Gson();
-        if (!Main.tasks.containsKey(id)) {
-            return getResponseError(res, id, gson);
-        }
-        return getResponseGet(res, id, gson);
     }
 
     public Object postCrawl(Request req, Response res) {

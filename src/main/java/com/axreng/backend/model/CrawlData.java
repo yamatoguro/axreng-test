@@ -18,11 +18,6 @@ public class CrawlData {
         this.id = id;
     }
 
-    public CrawlData(String id, Instant startInstant) {
-        this.id = id;
-        this.startInstant = startInstant;
-    }
-
     public ArrayList<String> getTerms() {
         return terms;
     }

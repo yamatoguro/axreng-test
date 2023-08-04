@@ -13,8 +13,13 @@ import java.util.regex.Pattern;
 import com.axreng.backend.model.CrawlData;
 
 public class Crawler {
-    private String BASE_URL = "";
-    private boolean crawling = false;
+    private String baseUrl;
+    private boolean crawling;
+
+    public Crawler() {
+        baseUrl = "";
+        crawling = false;
+    }
 
     public boolean isCrawling() {
         return crawling;
@@ -24,15 +29,19 @@ public class Crawler {
         this.crawling = crawling;
     }
 
-    public boolean aquireBaseUrl(String base_url) {
-        this.BASE_URL = base_url;
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public boolean setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
         return true;
     }
 
     private URL verifyUrl(String url) {
-        if (!url.toLowerCase().startsWith("http://"))
+        if (!url.toLowerCase().startsWith("http://") && !url.toLowerCase().startsWith("https://"))
             return null;
-        if (!url.toLowerCase().startsWith(BASE_URL))
+        if (!url.toLowerCase().startsWith(baseUrl))
             return null;
         URL verifiedUrl = null;
         try {
@@ -67,9 +76,9 @@ public class Crawler {
         while (m.find()) {
             String link = m.group(2).trim();
             if (link.toLowerCase().startsWith("../"))
-                link = BASE_URL + link.substring(3);
+                link = baseUrl + link.substring(3);
             if (!link.toLowerCase().startsWith("http://") && !link.toLowerCase().startsWith("https://"))
-                link = BASE_URL + link;
+                link = baseUrl + link;
             if (link.length() < 1) {
                 continue;
             }
