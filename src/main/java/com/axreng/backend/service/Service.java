@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.axreng.backend.Main;
 import com.axreng.backend.model.CrawlData;
@@ -44,7 +43,8 @@ public class Service {
     public String[] getCrawlByID(String id) {
         try {
             // Main.tasks.get(id).getCrawlProccess().get(10, TimeUnit.MILLISECONDS);
-            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(), Main.tasks.get(id).getUrls().size(),String[].class);
+            String[] result = Arrays.copyOf(Main.tasks.get(id).getUrls().toArray(), Main.tasks.get(id).getUrls().size(),
+                    String[].class);
             return result;
         } catch (Exception e) {
             return null;
@@ -76,7 +76,6 @@ public class Service {
 
     public String startCrawlTask(String param) throws InterruptedException, ExecutionException {
         String id = Utils.generateID();
-        // String result = "";
         CrawlData data = new CrawlData(id);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Callable<String> callable = new Callable<String>() {
@@ -91,8 +90,7 @@ public class Service {
         return id;
     }
 
-    public Object getCrawl(Request req, Response res) {
-        String id = req.params("id");
+    public String getCrawl(String id, Response res) {
         Gson gson = new Gson();
         if (!Main.tasks.containsKey(id)) {
             ResponseERROR response = new ResponseERROR();
@@ -100,31 +98,32 @@ public class Service {
             response.setMessage("crawl not found: " + id);
             res.body(gson.toJson(response));
             return gson.toJson(response);
+        } else {
+            String[] result = getCrawlByID(id);
+            ResponseGET response = new ResponseGET();
+            response.setId(id);
+            response.setStatus((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active");
+            response.setUrls(result);
+            res.body(gson.toJson(response));
+            return gson.toJson(response);
         }
-        String[] result = getCrawlByID(id);
-        ResponseGET response = new ResponseGET();
-        response.setId(id);
-        response.setStatus((Main.tasks.get(id).getCrawlProccess().isDone()) ? "done" : "active");
-        response.setUrls(result);
-        res.body(gson.toJson(response));
-        return gson.toJson(response);
     }
 
-    public Object postCrawl(Request req, Response res) {
+    public String postCrawl(String keywords, Response res) {
         String result;
         Gson gson = new Gson();
         try {
-            result = startCrawlTask(req.params("keywords"));
+            result = startCrawlTask(keywords);
             ResponsePOST response = new ResponsePOST();
             response.setId(result);
             res.body(gson.toJson(response));
-            return res.body();
+            return gson.toJson(response);
         } catch (InterruptedException | ExecutionException e) {
             ResponseERROR response = new ResponseERROR();
             response.setStatus(500);
             response.setMessage("an error ocurred while processing request | " + e.getMessage());
             res.body(gson.toJson(response));
-            return res.body();
+            return gson.toJson(response);
         }
     }
 }
